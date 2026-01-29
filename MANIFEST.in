@@ -1,0 +1,3 @@
+recursive-include pretix_multisafepay/static *
+recursive-include pretix_multisafepay/templates *
+recursive-include pretix_multisafepay/locale *

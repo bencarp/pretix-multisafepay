@@ -1,0 +1,294 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2022-03-22 22:45+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: pretix_multisafepay/__init__.py:10
+msgid "MultiSafepay"
+msgstr ""
+
+#: pretix_multisafepay/__init__.py:13
+msgid ""
+"Accept payments through MultiSafepay"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:28
+msgid "MultiSafepay"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:41
+msgid "Endpoint"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:44
+msgctxt "multisafepay"
+msgid "Live"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:45
+msgctxt "multisafepay"
+msgid "Testing"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:50
+msgid "API Username"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:54
+msgid "API Password"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:58
+msgid "Customer ID"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:62
+msgid "Terminal ID"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:69
+msgid "VISA"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:74
+msgid "MasterCard"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:79
+msgid "Diners"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:84
+msgid "JCB"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:89
+msgid "American Express"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:94 pretix_multisafepay/payment.py:546
+msgid "Bancontact"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:99 pretix_multisafepay/payment.py:553
+msgid "ePrzelewy"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:104 pretix_multisafepay/payment.py:560
+msgid "eps"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:109 pretix_multisafepay/payment.py:569
+msgid "giropay"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:114 pretix_multisafepay/payment.py:578
+msgid "iDEAL"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:131 pretix_multisafepay/payment.py:594
+msgid "PayPal"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:136 pretix_multisafepay/payment.py:602
+msgid "PostFinance Card"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:141 pretix_multisafepay/payment.py:609
+msgid "PostFinance eFinance"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:146 pretix_multisafepay/payment.py:616
+msgid "SEPA Direct Debit"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:151 pretix_multisafepay/payment.py:624
+msgid "Sofort"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:260 pretix_multisafepay/payment.py:291
+msgid ""
+"The payment has not been captured successfully and can therefore not be "
+"refunded."
+msgstr ""
+
+#: pretix_multisafepay/payment.py:358 pretix_multisafepay/payment.py:486
+#: pretix_multisafepay/views.py:116
+msgid ""
+"We had trouble communicating with MultiSafepay. Please try again and get in "
+"touch with us if this problem persists."
+msgstr ""
+
+#: pretix_multisafepay/payment.py:364
+msgid ""
+"The MultiSafepay plugin is operating in test mode. No money will actually be "
+"transferred."
+msgstr ""
+
+#: pretix_multisafepay/payment.py:522
+msgid "Credit card via MultiSafepay"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:523
+msgid "Credit card"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:545
+msgid "Bancontact via MultiSafepay"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:552
+msgid "ePrzelewy via MultiSafepay"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:559
+msgid "EPS via MultiSafepay"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:568
+msgid "giropay via MultiSafepay"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:577
+msgid "iDEAL via MultiSafepay"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:586
+msgid "paydirekt via MultiSafepay"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:587
+msgid "paydirekt"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:593
+msgid "PayPal via MultiSafepay"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:601
+msgid "PostFinance Card via MultiSafepay"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:608
+msgid "PostFinance eFinance via MultiSafepay"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:615
+msgid "SEPA Direct Debit via MultiSafepay"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:623
+msgid "Sofort via MultiSafepay"
+msgstr ""
+
+#: pretix_multisafepay/payment.py:632
+msgid "TWINT via MultiSafepay"
+msgstr ""
+
+#: pretix_multisafepay/signals.py:34
+msgid "Payment captured."
+msgstr ""
+
+#: pretix_multisafepay/signals.py:35
+msgid "Payment authorized."
+msgstr ""
+
+#: pretix_multisafepay/signals.py:39
+msgid "MultiSafepay reported an event: {}"
+msgstr ""
+
+#: pretix_multisafepay/templates/pretix_multisafepay/checkout_payment_confirm.html:3
+#: pretix_multisafepay/templates/pretix_multisafepay/checkout_payment_form.html:3
+msgid ""
+"After you submitted your order, we will redirect you to MultiSafepay to complete "
+"your payment. You will then be redirected back here to get your tickets."
+msgstr ""
+
+#: pretix_multisafepay/templates/pretix_multisafepay/checkout_payment_confirm.html:8
+#: pretix_multisafepay/templates/pretix_multisafepay/control.html:15
+msgid "Payment method"
+msgstr ""
+
+#: pretix_multisafepay/templates/pretix_multisafepay/control.html:6
+msgid "ID"
+msgstr ""
+
+#: pretix_multisafepay/templates/pretix_multisafepay/control.html:8
+msgid "Status"
+msgstr ""
+
+#: pretix_multisafepay/templates/pretix_multisafepay/control.html:10
+msgid "Date"
+msgstr ""
+
+#: pretix_multisafepay/templates/pretix_multisafepay/control.html:12
+msgid "SIX Reference"
+msgstr ""
+
+#: pretix_multisafepay/templates/pretix_multisafepay/control.html:17
+msgid "Payment source"
+msgstr ""
+
+#: pretix_multisafepay/templates/pretix_multisafepay/control.html:24
+msgid "Error message"
+msgstr ""
+
+#: pretix_multisafepay/templates/pretix_multisafepay/pending.html:4
+msgid ""
+"We're waiting for an answer from the payment provider regarding your "
+"payment. Please contact us if this takes more than a few days."
+msgstr ""
+
+#: pretix_multisafepay/templates/pretix_multisafepay/pending.html:9
+msgid ""
+"The payment transaction could not be completed for the following reason:"
+msgstr ""
+
+#: pretix_multisafepay/templates/pretix_multisafepay/pending.html:16
+msgid "Unknown reason"
+msgstr ""
+
+#: pretix_multisafepay/templates/pretix_multisafepay/redirect.html:17
+msgid "The payment process has started in a new window."
+msgstr ""
+
+#: pretix_multisafepay/templates/pretix_multisafepay/redirect.html:20
+msgid "The window to enter your payment data was not opened or was closed?"
+msgstr ""
+
+#: pretix_multisafepay/templates/pretix_multisafepay/redirect.html:24
+msgid "Click here in order to open the window."
+msgstr ""
+
+#: pretix_multisafepay/views.py:156
+msgid ""
+"We received your payment but were unable to mark your ticket as the server "
+"was too busy. Please check beck in a couple of minutes."
+msgstr ""
+
+#: pretix_multisafepay/views.py:160
+msgid ""
+"We received your payment but were unable to mark your ticket as paid as one "
+"of your ordered products is sold out. Please contact the event organizer for "
+"further steps."
+msgstr ""
+
+#: pretix_multisafepay/views.py:183
+msgid ""
+"Sorry, there was an error in the payment process. Please check the link in "
+"your emails to continue."
+msgstr ""

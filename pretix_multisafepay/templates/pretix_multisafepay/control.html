@@ -1,0 +1,28 @@
+{% load i18n %}
+
+{% if payment_info %}
+    {% if "Id" in payment_info %}
+        <dl class="dl-horizontal">
+            <dt>{% trans "ID" %}</dt>
+            <dd>{{ payment_info.Id }}</dd>
+            <dt>{% trans "Status" %}</dt>
+            <dd>{{ payment_info.Status }}</dd>
+            <dt>{% trans "Date" %}</dt>
+            <dd>{{ payment_info.Date }}</dd>
+            <dt>{% trans "SIX Reference" %}</dt>
+            <dd>{{ payment_info.SixTransactionReference }}</dd>
+            {% if "PaymentMeans" in payment_info %}
+                <dt>{% trans "Payment method" %}</dt>
+                <dd>{{ payment_info.PaymentMeans.Brand.Name }}</dd>
+                <dt>{% trans "Payment source" %}</dt>
+                <dd>{{ payment_info.PaymentMeans.DisplayText }}</dd>
+            {% endif %}
+        </dl>
+    {% endif %}
+    {% if "ErrorMessage" in payment_info %}
+        <dl class="dl-horizontal">
+            <dt>{% trans "Error message" %}</dt>
+            <dd>{{ payment_info.ErrorMessage }}</dd>
+        </dl>
+    {% endif %}
+{% endif %}

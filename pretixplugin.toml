@@ -1,0 +1,9 @@
+[plugin]
+package = "pretix-multisafepay"
+modules = [ "pretix_multisafepay" ]
+marketplace_name = "multisafepay"
+pypi = false
+repository_servers = { origin = "github.com" }
+tag_targets = [ "origin" ]
+branch_targets = [ "origin/master" ]
+

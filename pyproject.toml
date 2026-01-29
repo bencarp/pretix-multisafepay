@@ -1,0 +1,43 @@
+[project]
+name = "pretix-multisafepay"
+dynamic = ["version"]
+description = "This allows to accept payments through multisafepay."
+readme = "README.rst"
+requires-python = ">=3.9"
+license = {file = "LICENSE"}
+keywords = ["pretix"]
+authors = [
+    {name = "Ben Carp", email = "dev@bencarp.com"},
+]
+maintainers = [
+    {name = "Ben Carp", email = "dev@bencarp.com"}
+]
+
+dependencies = [
+
+]
+
+[project.entry-points."pretix.plugin"]
+pretix_multisafepay = "pretix_multisafepay:PretixPluginMeta"
+
+[project.entry-points."distutils.commands"]
+build = "pretix_plugin_build.build:CustomBuild"
+
+[build-system]
+requires = [
+    "setuptools",
+    "pretix-plugin-build",
+]
+
+[project.urls]
+homepage = "https://github.com/bencarp/pretix-multisafepay"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.dynamic]
+version = {attr = "pretix_multisafepay.__version__"}
+
+[tool.setuptools.packages.find]
+include = ["pretix*"]
+namespaces = false
