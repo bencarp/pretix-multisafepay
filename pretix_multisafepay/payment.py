@@ -106,13 +106,13 @@ class MultisafepaySettingsHolder(BasePaymentProvider):
                         required=False,
                     ),
                 ),
-                (
-                    "method_eps",
-                    forms.BooleanField(
-                        label=_("eps"),
-                        required=False,
-                    ),
-                ),
+                # (
+                #     "method_eps",
+                #     forms.BooleanField(
+                #         label=_("eps"),
+                #         required=False,
+                #     ),
+                # ),
 
                 (
                     "method_wero",
@@ -121,83 +121,83 @@ class MultisafepaySettingsHolder(BasePaymentProvider):
                         required=False,
                     ),
                 ),
-                (
-                    "method_paypal",
-                    forms.BooleanField(
-                        label=_("PayPal"),
-                        required=False,
-                    ),
-                ),
-                (
-                    "method_trustly",
-                    forms.BooleanField(
-                        label=_("Trustly"),
-                        required=False,
-                    ),
-                ),
-                (
-                    "method_kbc",
-                    forms.BooleanField(
-                        label=_("KBC"),
-                        required=False,
-                    ),
-                ),
-                (
-                    "method_cbc",
-                    forms.BooleanField(
-                        label=_("CBC"),
-                        required=False,
-                    ),
-                ),
-                (
-                    "method_mbway",
-                    forms.BooleanField(
-                        label=_("MB WAY"),
-                        required=False,
-                    ),
-                ),
-                (
-                    "method_wechat",
-                    forms.BooleanField(
-                        label=_("WeChat Pay"),
-                        required=False,
-                    ),
-                ),
-                (
-                    "method_dotpay",
-                    forms.BooleanField(
-                        label=_("Dotpay"),
-                        required=False,
-                    ),
-                ),
-                (
-                    "method_mybank",
-                    forms.BooleanField(
-                        label=_("MyBank"),
-                        required=False,
-                    ),
-                ),
-                (
-                    "method_alipay",
-                    forms.BooleanField(
-                        label=_("Alipay"),
-                        required=False,
-                    ),
-                ),
-                (
-                    "method_sepadebit",
-                    forms.BooleanField(
-                        label=_("SEPA Direct Debit"),
-                        required=False,
-                    ),
-                ),
-                    (
-                    "method_sofort",
-                    forms.BooleanField(
-                        label=_("SOFORT"),
-                        required=False,
-                    ),
-                )
+                # (
+                #     "method_paypal",
+                #     forms.BooleanField(
+                #         label=_("PayPal"),
+                #         required=False,
+                #     ),
+                # ),
+                # (
+                #     "method_trustly",
+                #     forms.BooleanField(
+                #         label=_("Trustly"),
+                #         required=False,
+                #     ),
+                # ),
+                # (
+                #     "method_kbc",
+                #     forms.BooleanField(
+                #         label=_("KBC"),
+                #         required=False,
+                #     ),
+                # ),
+                # (
+                #     "method_cbc",
+                #     forms.BooleanField(
+                #         label=_("CBC"),
+                #         required=False,
+                #     ),
+                # ),
+                # (
+                #     "method_mbway",
+                #     forms.BooleanField(
+                #         label=_("MB WAY"),
+                #         required=False,
+                #     ),
+                # ),
+                # (
+                #     "method_wechat",
+                #     forms.BooleanField(
+                #         label=_("WeChat Pay"),
+                #         required=False,
+                #     ),
+                # ),
+                # (
+                #     "method_dotpay",
+                #     forms.BooleanField(
+                #         label=_("Dotpay"),
+                #         required=False,
+                #     ),
+                # ),
+                # (
+                #     "method_mybank",
+                #     forms.BooleanField(
+                #         label=_("MyBank"),
+                #         required=False,
+                #     ),
+                # ),
+                # (
+                #     "method_alipay",
+                #     forms.BooleanField(
+                #         label=_("Alipay"),
+                #         required=False,
+                #     ),
+                # ),
+                # (
+                #     "method_sepadebit",
+                #     forms.BooleanField(
+                #         label=_("SEPA Direct Debit"),
+                #         required=False,
+                #     ),
+                # ),
+                #     (
+                #     "method_sofort",
+                #     forms.BooleanField(
+                #         label=_("SOFORT"),
+                #         required=False,
+                #     ),
+                # )
             ]
             + list(super().settings_form_fields.items())
         )
@@ -308,169 +308,6 @@ class MultisafepayMethod(BasePaymentProvider):
                 "DisplayText"
             ),
         }
-
-    # def execute_refund(self, refund: OrderRefund):
-    #     d = refund.payment.info_data
-    #
-    #     try:
-    #         if self.cancel_flow and refund.amount == refund.payment.amount:
-    #             if "Id" not in d:
-    #                 raise PaymentException(
-    #                     _(
-    #                         "The payment has not been captured successfully and can therefore not be "
-    #                         "refunded."
-    #                     )
-    #                 )
-    #
-    #             req = self._post(
-    #                 "Payment/v1/Transaction/Cancel",
-    #                 json={
-    #                     "RequestHeader": {
-    #                         "SpecVersion": __spec_version__,
-    #                         "CustomerId": self.settings.customer_id,
-    #                         "RequestId": str(uuid.uuid4()),
-    #                         "RetryIndicator": 0,
-    #                     },
-    #                     "TransactionReference": {"TransactionId": d.get("Id")},
-    #                 },
-    #             )
-    #             if req.status_code == 200:
-    #                 refund.info = req.text
-    #                 refund.save(update_fields=["info"])
-    #                 refund.done()
-    #                 return
-    #             else:
-    #                 try:
-    #                     err = req.json()
-    #                 except Exception:
-    #                     req.raise_for_status()
-    #                 else:
-    #                     if err.get("ErrorName") not in (
-    #                         "ACTION_NOT_SUPPORTED",
-    #                         "TRANSACTION_ALREADY_CAPTURED",
-    #                         "TRANSACTION_IN_WRONG_STATE",
-    #                     ):
-    #                         req.raise_for_status()
-    #                     else:
-    #                         pass  # retry with regular flow
-    #
-    #         if "CaptureId" not in d:
-    #             raise PaymentException(
-    #                 _(
-    #                     "The payment has not been captured successfully and can therefore not be "
-    #                     "refunded."
-    #                 )
-    #             )
-    #
-    #         req = self._post(
-    #             "Payment/v1/Transaction/Refund",
-    #             json={
-    #                 "RequestHeader": {
-    #                     "SpecVersion": __spec_version__,
-    #                     "CustomerId": self.settings.customer_id,
-    #                     "RequestId": str(uuid.uuid4()),
-    #                     "RetryIndicator": 0,
-    #                 },
-    #                 "Refund": {
-    #                     "Amount": {
-    #                         "Value": str(self._decimal_to_int(refund.amount)),
-    #                         "CurrencyCode": self.event.currency,
-    #                     },
-    #                     "OrderId": "{}-{}-R-{}".format(
-    #                         self.event.slug.upper(), refund.order.code, refund.local_id
-    #                     ),
-    #                     "Description": "Order {}-{}".format(
-    #                         self.event.slug.upper(), refund.order.code
-    #                     ),
-    #                 },
-    #                 "CaptureReference": {"CaptureId": d.get("CaptureId")},
-    #             },
-    #         )
-    #         req.raise_for_status()
-    #         refund.info_data = req.json()
-    #         refund.save(update_fields=["info"])
-    #
-    #         if refund.info_data["Transaction"].get("Status") == "CAPTURED":
-    #             refund.done()
-    #         elif refund.info_data["Transaction"].get("Status") == "AUTHORIZED":
-    #             req = self._post(
-    #                 "Payment/v1/Transaction/Capture",
-    #                 json={
-    #                     "RequestHeader": {
-    #                         "SpecVersion": __spec_version__,
-    #                         "CustomerId": self.settings.customer_id,
-    #                         "RequestId": str(uuid.uuid4()),
-    #                         "RetryIndicator": 0,
-    #                     },
-    #                     "TransactionReference": {
-    #                         "TransactionId": refund.info_data["Transaction"].get("Id")
-    #                     },
-    #                 },
-    #             )
-    #             req.raise_for_status()
-    #             data = req.json()
-    #             if data["Status"] == "CAPTURED":
-    #                 refund.order.log_action("pretix_multisafepay.event.paid")
-    #                 trans = refund.info_data
-    #                 trans["Transaction"]["Status"] = "CAPTURED"
-    #                 trans["Transaction"]["CaptureId"] = data["CaptureId"]
-    #                 refund.info = json.dumps(trans)
-    #                 refund.save(update_fields=["info"])
-    #                 refund.done()
-    #
-    #     except HTTPError:
-    #         logger.exception("Multisafepay error: %s" % req.text)
-    #         try:
-    #             refund.info_data = req.json()
-    #         except Exception:
-    #             refund.info_data = {"error": True, "detail": req.text}
-    #         refund.state = OrderRefund.REFUND_STATE_FAILED
-    #         refund.save()
-    #         refund.order.log_action(
-    #             "pretix.event.order.refund.failed",
-    #             {
-    #                 "local_id": refund.local_id,
-    #                 "provider": refund.provider,
-    #                 "data": refund.info_data,
-    #             },
-    #         )
-    #         if "ProcessorMessage" in refund.info_data:
-    #             raise PaymentException(
-    #                 _("Multisafepay returned the following error: {error}").format(
-    #                     error=refund.info_data.get("ProcessorMessage")
-    #                 )
-    #             )
-    #         elif "ErrorMessage" in refund.info_data:
-    #             raise PaymentException(
-    #                 _("Multisafepay returned the following error: {error}").format(
-    #                     error=refund.info_data.get("ErrorMessage")
-    #                 )
-    #             )
-    #         raise PaymentException(
-    #             _(
-    #                 "We had trouble communicating with Multisafepay. Please try again and get in touch "
-    #                 "with us if this problem persists."
-    #             )
-    #         )
-    #     except RequestException as e:
-    #         logger.exception("Multisafepay error")
-    #         refund.info_data = {"error": True, "detail": str(e)}
-    #         refund.state = OrderRefund.REFUND_STATE_FAILED
-    #         refund.save()
-    #         refund.order.log_action(
-    #             "pretix.event.order.refund.failed",
-    #             {
-    #                 "local_id": refund.local_id,
-    #                 "provider": refund.provider,
-    #                 "data": refund.info_data,
-    #             },
-    #         )
-    #         raise PaymentException(
-    #             _(
-    #                 "We had trouble communicating with Multisafepay. Please try again and get in touch "
-    #                 "with us if this problem persists."
-    #             )
-    #         )
 
     @property
     def test_mode_message(self):
@@ -628,31 +465,6 @@ class MultisafepayMethod(BasePaymentProvider):
         request.session["payment_multisafepay_order_secret"] = payment.order.secret
         return self.redirect(request, data.get("RedirectUrl"))
 
-    def redirect(self, request, url):
-        if request.session.get("iframe_session", False) and self.method in (
-            "paypal",
-            "sofort",
-            "giropay",
-            "paydirekt",
-        ):
-            return (
-                build_absolute_uri(request.event, "plugins:pretix_multisafepay:redirect")
-                + "?data="
-                + signing.dumps(
-                    {
-                        "url": url,
-                        "session": {
-                            "payment_multisafepay_order_secret": request.session[
-                                "payment_multisafepay_order_secret"
-                            ],
-                        },
-                    },
-                    salt="safe-redirect",
-                )
-            )
-        else:
-            return str(url)
-
     def shred_payment_info(self, obj: OrderPayment):
         if not obj.info:
             return
@@ -706,92 +518,18 @@ class MultisafepayCC(MultisafepayMethod):
     def is_enabled(self) -> bool:
         return self.settings.get("_enabled", as_type=bool) and self.payment_methods
 
-
-class RetiredMethodMixin:
-    def is_allowed(self, request: HttpRequest, total: Decimal = None) -> bool:
-        return False
-
-    def order_change_allowed(self, order: Order) -> bool:
-        return False
-
+class MultisafepayWero(MultisafepayMethod):
+    method = "wero"
+    verbose_name = _("iDeal | Wero via Multisafepay")
+    public_name = _("iDeal | Wero")
+    refunds_allowed = True
+    cancel_flow = False
+    payment_methods = ["WERO"]
 
 class MultisafepayBancontact(MultisafepayMethod):
     method = "bancontact"
     verbose_name = _("Bancontact via Multisafepay")
     public_name = _("Bancontact")
-    payment_methods = ["BANCONTACT"]
-
-
-class MultisafepayEPrzelewy(MultisafepayMethod):
-    method = "eprzelewy"
-    verbose_name = _("ePrzelewy via Multisafepay")
-    public_name = _("ePrzelewy")
-    payment_methods = ["EPRZELEWY"]
-
-
-class MultisafepayEPS(MultisafepayMethod):
-    method = "eps"
-    verbose_name = _("EPS via Multisafepay")
-    public_name = _("eps")
-    refunds_allowed = False
-    cancel_flow = False
-    payment_methods = ["EPS"]
-
-
-class MultisafepayGiropay(RetiredMethodMixin, MultisafepayMethod):
-    method = "giropay"
-    verbose_name = _("giropay via Multisafepay")
-    public_name = _("giropay")
-    refunds_allowed = False
-    cancel_flow = False
-    payment_methods = ["GIROPAY"]
-
-
-class MultisafepayIdeal(MultisafepayMethod):
-    method = "ideal"
-    verbose_name = _("iDEAL via Multisafepay")
-    public_name = _("iDEAL")
-    refunds_allowed = False
-    cancel_flow = False
-    payment_methods = ["IDEAL"]
-
-
-class MultisafepayPaydirekt(MultisafepayMethod):
-    method = "paydirekt"
-    verbose_name = _("paydirekt via Multisafepay")
-    public_name = _("paydirekt")
-    payment_methods = ["PAYDIREKT"]
-
-
-class MultisafepayPayPal(MultisafepayMethod):
-    method = "paypal"
-    verbose_name = _("PayPal via Multisafepay")
-    public_name = _("PayPal")
-    cancel_flow = False
-    payment_methods = ["PAYPAL"]
-
-
-class MultisafepaySepadebit(MultisafepayMethod):
-    method = "sepadebit"
-    verbose_name = _("SEPA Direct Debit via Multisafepay")
-    public_name = _("SEPA Direct Debit")
-    refunds_allowed = False
-    payment_methods = ["DIRECTDEBIT"]
-
-
-class MultisafepaySofort(RetiredMethodMixin, MultisafepayMethod):
-    method = "sofort"
-    verbose_name = _("Sofort via Multisafepay")
-    public_name = _("Sofort")
-    refunds_allowed = False
-    cancel_flow = False
-    payment_methods = ["SOFORT"]
-
-
-class MultisafepayWero(MultisafepayMethod):
-    method = "wero"
-    verbose_name = _("Wero via Multisafepay")
-    public_name = _("Wero")
     refunds_allowed = True
     cancel_flow = False
-    payment_methods = ["WERO"]
+    payment_methods = ["BANCONTACT"]

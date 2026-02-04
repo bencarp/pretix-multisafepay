@@ -10,23 +10,13 @@ logger = logging.getLogger(__name__)
 @receiver(register_payment_providers, dispatch_uid="payment_multisafepay")
 def register_payment_provider(sender, **kwargs):
     from .payment import (
-        MultisafepayBancontact, MultisafepayCC, MultisafepayEPrzelewy, MultisafepayEPS,
-        MultisafepayGiropay, MultisafepayIdeal, MultisafepayPaydirekt, MultisafepayPayPal,
-        MultisafepaySepadebit, MultisafepaySettingsHolder, MultisafepaySofort, MultisafepayWero,
+        MultisafepayBancontact, MultisafepayCC, MultisafepaySettingsHolder, MultisafepayWero
     )
 
     return [
         MultisafepayBancontact,
-        MultisafepayEPrzelewy,
         MultisafepayCC,
-        MultisafepayEPS,
-        MultisafepayGiropay,
-        MultisafepayIdeal,
-        MultisafepayPaydirekt,
-        MultisafepayPayPal,
-        MultisafepaySepadebit,
         MultisafepaySettingsHolder,
-        MultisafepaySofort,
         MultisafepayWero,
     ]
 
