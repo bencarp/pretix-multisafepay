@@ -520,7 +520,7 @@ class MultisafepayWero(MultisafepayMethod):
     public_name = _("iDeal | Wero")
     refunds_allowed = True
     cancel_flow = False
-    payment_methods = ["WERO"]
+    payment_methods = ["IDEAL"]
 
 class MultisafepayBancontact(MultisafepayMethod):
     method = "bancontact"
