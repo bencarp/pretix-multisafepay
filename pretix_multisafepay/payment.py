@@ -771,13 +771,6 @@ class MultisafepayPayPal(MultisafepayMethod):
     payment_methods = ["PAYPAL"]
 
 
-class MultisafepayPostfinanceEfinance(RetiredMethodMixin, MultisafepayMethod):
-    method = "postfinance_efinance"
-    verbose_name = _("PostFinance eFinance via Multisafepay")
-    public_name = _("PostFinance eFinance")
-    payment_methods = ["POSTFINANCE"]
-
-
 class MultisafepaySepadebit(MultisafepayMethod):
     method = "sepadebit"
     verbose_name = _("SEPA Direct Debit via Multisafepay")

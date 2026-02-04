@@ -12,9 +12,7 @@ def register_payment_provider(sender, **kwargs):
     from .payment import (
         MultisafepayBancontact, MultisafepayCC, MultisafepayEPrzelewy, MultisafepayEPS,
         MultisafepayGiropay, MultisafepayIdeal, MultisafepayPaydirekt, MultisafepayPayPal,
-        MultisafepayPostfinanceCard, MultisafepayPostfinancePay, MultisafepayPostfinanceEfinance,
-        MultisafepaySepadebit, MultisafepaySettingsHolder, MultisafepaySofort,
-        MultisafepayTwint, MultisafepayWero,
+        MultisafepaySepadebit, MultisafepaySettingsHolder, MultisafepaySofort, MultisafepayWero,
     )
 
     return [
@@ -26,13 +24,9 @@ def register_payment_provider(sender, **kwargs):
         MultisafepayIdeal,
         MultisafepayPaydirekt,
         MultisafepayPayPal,
-        MultisafepayPostfinanceCard,
-        MultisafepayPostfinanceEfinance,
-        MultisafepayPostfinancePay,
         MultisafepaySepadebit,
         MultisafepaySettingsHolder,
         MultisafepaySofort,
-        MultisafepayTwint,
         MultisafepayWero,
     ]
 

@@ -16,10 +16,6 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
 "X-Generator: Weblate 5.15.2\n"
 
-#: pretix_multisafepay/__init__.py:10
-msgid "MultiSafepay"
-msgstr "MultiSafepay"
-
 #: pretix_multisafepay/__init__.py:13
 msgid ""
 "Accept payments through MultiSafepay."
