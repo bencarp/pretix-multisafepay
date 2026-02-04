@@ -23,6 +23,7 @@ Docker
 ------
 
 Since this package is inofficial and not (yet) tracked by PyPI, clone the repository in your Pretix Dockerfile, e.g.
+
 ..  code-block:: docker
     :caption: pretix/Dockerfile
 
