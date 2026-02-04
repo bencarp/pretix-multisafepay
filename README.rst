@@ -19,6 +19,22 @@ Development setup
 6. Restart your local pretix server. You can now use the plugin from this repository for your events by enabling it in
    the 'plugins' tab in the settings.
 
+Docker
+------
+
+Since this package is inofficial and not (yet) tracked by PyPI, clone the repository in your Pretix Dockerfile, e.g.
+..  code-block:: docker
+    :caption: pretix/Dockerfile
+
+    FROM pretix/standalone:stable
+    USER root
+    RUN pip install --upgrade pip
+    RUN git clone https://github.com/bencarp/pretix-multisafepay.git
+    WORKDIR /pretix-multisafepay
+    RUN pip3 install -e . && make
+    USER pretixuser
+    RUN cd /pretix/src && make production
+
 
 License
 -------
