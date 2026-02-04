@@ -486,10 +486,6 @@ class MultisafepayCC(MultisafepayMethod):
         payment_methods = []
         if self.settings.get("method_visa", as_type=bool):
             payment_methods.append("VISA")
-        if self.settings.get("method_diners", as_type=bool):
-            payment_methods.append("DINERS")
-        if self.settings.get("method_jcb", as_type=bool):
-            payment_methods.append("JCB")
         if self.settings.get("method_mastercard", as_type=bool):
             payment_methods.append("MASTERCARD")
         if self.settings.get("method_amex", as_type=bool):
