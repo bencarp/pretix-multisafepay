@@ -16,6 +16,7 @@ from pretix.base.decimal import round_decimal
 from pretix.base.models import Event, OrderPayment, OrderRefund, Order
 from pretix.base.payment import BasePaymentProvider, PaymentException
 from pretix.base.settings import SettingsSandbox
+from pretix.settings import __version__ as pretix_version
 from pretix.multidomain.urlreverse import build_absolute_uri
 from requests import HTTPError, RequestException
 
@@ -117,7 +118,7 @@ class MultisafepaySettingsHolder(BasePaymentProvider):
                 (
                     "method_wero",
                     forms.BooleanField(
-                        label=_("iDEAL | wero"),
+                        label=_("iDEAL | Wero"),
                         required=False,
                     ),
                 ),
@@ -323,7 +324,7 @@ class MultisafepayMethod(BasePaymentProvider):
                 env="www" if self.settings.get("endpoint") == "live" else "testapi",
                 ep=endpoint,
             ),
-            auth=(self.settings.get("api_user"), self.settings.get("api_pass")),
+            auth=(self.settings.get("api_key")),
             timeout=20,
             *args,
             **kwargs,
@@ -336,7 +337,7 @@ class MultisafepayMethod(BasePaymentProvider):
                 env="api" if self.settings.get("endpoint") == "live" else "testapi",
                 ep=endpoint,
             ),
-            auth=(self.settings.get("api_user"), self.settings.get("api_pass")),
+            auth=(self.settings.get("api_key")),
             timeout=20,
             *args,
             **kwargs,
@@ -364,37 +365,36 @@ class MultisafepayMethod(BasePaymentProvider):
     def _get_payment_page_init_body(self, payment):
         b = {
             "RequestHeader": {
-                "SpecVersion": __spec_version__,
-                "CustomerId": self.settings.customer_id,
-                "RequestId": str(uuid.uuid4()),
-                "RetryIndicator": 0,
-                "ClientInfo": {
-                    "ShopInfo": "pretix",
-                },
+                "accept": "application/json",
+                "content-type": "application/json",
             },
-            "TerminalId": self.settings.terminal_id,
-            "Payment": {
-                "Amount": {
-                    "Value": str(self._decimal_to_int(payment.amount)),
-                    "CurrencyCode": self.event.currency,
-                },
-                "OrderId": "{}-{}-P-{}".format(
-                    self.event.slug.upper(), payment.order.code, payment.local_id
+            "type": "redirect",
+            "amount": str(self._decimal_to_int(payment.amount)),
+            "currency": self.settings.currency,
+            "order_id": "{}-{}-P-{}".format(
+                self.event.slug.upper(), payment.order.code, payment.local_id
+            ),
+            "description": "Order {}-{}".format(
+                self.event.slug.upper(), payment.order.code
+            ),
+            # "PayerNote": "{}-{}".format(
+            #     self.event.slug.upper(), payment.order.code
+            # ),
+            "gateway": self.payment_methods,
+            # "Wallets": self.payment_method_wallets,
+            # "Payer": {
+            #     "LanguageCode": self.get_locale(payment.order.locale),
+            # },
+            "payment_options": {
+                "notification_url": build_absolute_uri(
+                    self.event,
+                    "plugins:pretix_multisafepay:webhook",
+                    kwargs={
+                        "payment": payment.pk
+                    }
                 ),
-                "Description": "Order {}-{}".format(
-                    self.event.slug.upper(), payment.order.code
-                ),
-                "PayerNote": "{}-{}".format(
-                    self.event.slug.upper(), payment.order.code
-                ),
-            },
-            "PaymentMethods": self.payment_methods,
-            "Wallets": self.payment_method_wallets,
-            "Payer": {
-                "LanguageCode": self.get_locale(payment.order.locale),
-            },
-            "ReturnUrl": {
-                "Url": build_absolute_uri(
+                "notification_method": "POST",
+                "redirect_url": build_absolute_uri(
                     self.event,
                     "plugins:pretix_multisafepay:return",
                     kwargs={
@@ -405,17 +405,7 @@ class MultisafepayMethod(BasePaymentProvider):
                         ).hexdigest(),
                     },
                 ),
-            },
-            "Notification": {
-                "SuccessNotifyUrl": build_absolute_uri(
-                    self.event,
-                    "plugins:pretix_multisafepay:webhook",
-                    kwargs={
-                        "payment": payment.pk,
-                        "action": "success",
-                    },
-                ),
-                "FailNotifyUrl": build_absolute_uri(
+                "cancel_url": build_absolute_uri(
                     self.event,
                     "plugins:pretix_multisafepay:webhook",
                     kwargs={
@@ -423,14 +413,24 @@ class MultisafepayMethod(BasePaymentProvider):
                         "action": "fail",
                     },
                 ),
+
             },
+            "days_active": "14", # fix!
+            "plugin": {
+                "shop": "Pretix",
+                "shop_version": pretix_version,
+                "plugin_version": __version__,
+                "shop_root_url": "https://lalalal"
+            }
         }
+
+        print(b) # only for debug!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         return b
 
     def execute_payment(self, request: HttpRequest, payment: OrderPayment):
         try:
             req = self._post(
-                "Payment/v1/PaymentPage/Initialize",
+                "v1/json/orders",
                 json=self._get_payment_page_init_body(payment),
             )
             req.raise_for_status()
@@ -463,7 +463,7 @@ class MultisafepayMethod(BasePaymentProvider):
         payment.state = OrderPayment.PAYMENT_STATE_CREATED
         payment.save()
         request.session["payment_multisafepay_order_secret"] = payment.order.secret
-        return self.redirect(request, data.get("RedirectUrl"))
+        return self.redirect(request, data.get("payment_url"))
 
     def shred_payment_info(self, obj: OrderPayment):
         if not obj.info:
@@ -480,39 +480,43 @@ class MultisafepayMethod(BasePaymentProvider):
 class MultisafepayCC(MultisafepayMethod):
     method = "creditcard"
     verbose_name = _("Credit card via Multisafepay")
+    public_name = _("Credit card")
+    refunds_allowed = True
+    cancel_flow = False
+    payment_methods = ["CREDITCARD"]
 
-    @property
-    def payment_methods(self):
-        payment_methods = []
-        if self.settings.get("method_visa", as_type=bool):
-            payment_methods.append("VISA")
-        if self.settings.get("method_mastercard", as_type=bool):
-            payment_methods.append("MASTERCARD")
-        if self.settings.get("method_amex", as_type=bool):
-            payment_methods.append("AMEX")
-        return payment_methods
+    # @property
+    # def payment_methods(self):
+    #     payment_methods = []
+    #     if self.settings.get("method_visa", as_type=bool):
+    #         payment_methods.append("VISA")
+    #     if self.settings.get("method_mastercard", as_type=bool):
+    #         payment_methods.append("MASTERCARD")
+    #     if self.settings.get("method_amex", as_type=bool):
+    #         payment_methods.append("AMEX")
+    #     return payment_methods
+    #
+    # @property
+    # def payment_method_wallets(self):
+    #     payment_methods = []
+    #     if self.settings.get("method_applepay", as_type=bool):
+    #         payment_methods.append("APPLEPAY")
+    #     if self.settings.get("method_googlepay", as_type=bool):
+    #         payment_methods.append("GOOGLEPAY")
+    #     return payment_methods
+    #
+    # @property
+    # def public_name(self) -> str:
+    #     payment_methods = [gettext("Credit card")]
+    #     if self.settings.get("method_applepay", as_type=bool):
+    #         payment_methods.append(gettext("Apple Pay"))
+    #     if self.settings.get("method_googlepay", as_type=bool):
+    #         payment_methods.append(gettext("Google Pay"))
+    #     return ", ".join(payment_methods)
 
-    @property
-    def payment_method_wallets(self):
-        payment_methods = []
-        if self.settings.get("method_applepay", as_type=bool):
-            payment_methods.append("APPLEPAY")
-        if self.settings.get("method_googlepay", as_type=bool):
-            payment_methods.append("GOOGLEPAY")
-        return payment_methods
-
-    @property
-    def public_name(self) -> str:
-        payment_methods = [gettext("Credit card")]
-        if self.settings.get("method_applepay", as_type=bool):
-            payment_methods.append(gettext("Apple Pay"))
-        if self.settings.get("method_googlepay", as_type=bool):
-            payment_methods.append(gettext("Google Pay"))
-        return ", ".join(payment_methods)
-
-    @property
-    def is_enabled(self) -> bool:
-        return self.settings.get("_enabled", as_type=bool) and self.payment_methods
+    # @property
+    # def is_enabled(self) -> bool:
+    #     return self.settings.get("_enabled", as_type=bool) and self.payment_methods
 
 class MultisafepayWero(MultisafepayMethod):
     method = "wero"
