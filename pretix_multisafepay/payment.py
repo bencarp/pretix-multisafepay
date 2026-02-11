@@ -18,9 +18,10 @@ from pretix.base.payment import BasePaymentProvider, PaymentException
 from pretix.base.settings import SettingsSandbox
 from pretix.settings import __version__ as pretix_version
 from pretix.multidomain.urlreverse import build_absolute_uri
+from pretix.multidomain import event_url
 from requests import HTTPError, RequestException
 
-from . import __spec_version__
+from . import __version__
 
 logger = logging.getLogger(__name__)
 
@@ -320,28 +321,28 @@ class MultisafepayMethod(BasePaymentProvider):
 
     def _post(self, endpoint, *args, **kwargs):
         r = requests.post(
-            "https://{env}.multisafepay.com/v1/json/{ep}".format(
+            "https://{env}.multisafepay.com/v1/json/orders?api_key={auth}".format(
                 env="www" if self.settings.get("endpoint") == "live" else "testapi",
-                ep=endpoint,
+                auth=(self.settings.get("api_key"))
             ),
-            auth=(self.settings.get("api_key")),
             timeout=20,
             *args,
             **kwargs,
         )
+        print(f)
         return r
 
     def _get(self, endpoint, *args, **kwargs):
         r = requests.get(
-            "https://{env}.multisafepay.com/v1/json/{ep}".format(
-                env="api" if self.settings.get("endpoint") == "live" else "testapi",
-                ep=endpoint,
+            "https://{env}.multisafepay.com/v1/json/orders?api_key={auth}".format(
+                env="www" if self.settings.get("endpoint") == "live" else "testapi",
+                auth=(self.settings.get("api_key"))
             ),
-            auth=(self.settings.get("api_key")),
             timeout=20,
             *args,
             **kwargs,
         )
+        print(f)
         return r
 
     def get_locale(self, language):
@@ -385,42 +386,42 @@ class MultisafepayMethod(BasePaymentProvider):
             # "Payer": {
             #     "LanguageCode": self.get_locale(payment.order.locale),
             # },
-            "payment_options": {
-                "notification_url": build_absolute_uri(
-                    self.event,
-                    "plugins:pretix_multisafepay:webhook",
-                    kwargs={
-                        "payment": payment.pk
-                    }
-                ),
-                "notification_method": "POST",
-                "redirect_url": build_absolute_uri(
-                    self.event,
-                    "plugins:pretix_multisafepay:return",
-                    kwargs={
-                        "order": payment.order.code,
-                        "payment": payment.pk,
-                        "hash": hashlib.sha1(
-                            payment.order.secret.lower().encode()
-                        ).hexdigest(),
-                    },
-                ),
-                "cancel_url": build_absolute_uri(
-                    self.event,
-                    "plugins:pretix_multisafepay:webhook",
-                    kwargs={
-                        "payment": payment.pk,
-                        "action": "fail",
-                    },
-                ),
-
-            },
+            # "payment_options": {
+            #     "notification_url": build_absolute_uri(
+            #         self.event,
+            #         "plugins:pretix_multisafepay:webhook",
+            #         kwargs={
+            #             "payment": payment.pk
+            #         }
+            #     ),
+            #     "notification_method": "POST",
+            #     "redirect_url": build_absolute_uri(
+            #         self.event,
+            #         "plugins:pretix_multisafepay:return",
+            #         kwargs={
+            #             "order": payment.order.code,
+            #             "payment": payment.pk,
+            #             "hash": hashlib.sha1(
+            #                 payment.order.secret.lower().encode()
+            #             ).hexdigest(),
+            #         },
+            #     ),
+            #     "cancel_url": build_absolute_uri(
+            #         self.event,
+            #         "plugins:pretix_multisafepay:webhook",
+            #         kwargs={
+            #             "payment": payment.pk,
+            #             "action": "fail",
+            #         },
+            #     ),
+            #
+            # },
             "days_active": "14", # fix!
             "plugin": {
                 "shop": "Pretix",
                 "shop_version": pretix_version,
                 "plugin_version": __version__,
-                "shop_root_url": "https://lalalal"
+                "shop_root_url": "https://pretix.nesko.nl" # temporarily hardcoded because different cases for event/shop urls
             }
         }
 
