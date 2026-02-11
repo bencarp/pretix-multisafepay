@@ -329,7 +329,7 @@ class MultisafepayMethod(BasePaymentProvider):
             *args,
             **kwargs,
         )
-        print(f)
+        print(r)
         return r
 
     def _get(self, endpoint, *args, **kwargs):
@@ -371,7 +371,7 @@ class MultisafepayMethod(BasePaymentProvider):
             },
             "type": "redirect",
             "amount": str(self._decimal_to_int(payment.amount)),
-            "currency": self.settings.currency,
+            "currency": self.event.currency,
             "order_id": "{}-{}-P-{}".format(
                 self.event.slug.upper(), payment.order.code, payment.local_id
             ),
@@ -386,36 +386,36 @@ class MultisafepayMethod(BasePaymentProvider):
             # "Payer": {
             #     "LanguageCode": self.get_locale(payment.order.locale),
             # },
-            # "payment_options": {
-            #     "notification_url": build_absolute_uri(
-            #         self.event,
-            #         "plugins:pretix_multisafepay:webhook",
-            #         kwargs={
-            #             "payment": payment.pk
-            #         }
-            #     ),
-            #     "notification_method": "POST",
-            #     "redirect_url": build_absolute_uri(
-            #         self.event,
-            #         "plugins:pretix_multisafepay:return",
-            #         kwargs={
-            #             "order": payment.order.code,
-            #             "payment": payment.pk,
-            #             "hash": hashlib.sha1(
-            #                 payment.order.secret.lower().encode()
-            #             ).hexdigest(),
-            #         },
-            #     ),
-            #     "cancel_url": build_absolute_uri(
-            #         self.event,
-            #         "plugins:pretix_multisafepay:webhook",
-            #         kwargs={
-            #             "payment": payment.pk,
-            #             "action": "fail",
-            #         },
-            #     ),
-            #
-            # },
+            "payment_options": {
+                # "notification_url": build_absolute_uri(
+                #     self.event,
+                #     "plugins:pretix_multisafepay:webhook",
+                #     kwargs={
+                #         "payment": payment.pk
+                #     }
+                # ),
+                "notification_method": "POST",
+                "redirect_url": build_absolute_uri(
+                    self.event,
+                    "plugins:pretix_multisafepay:return",
+                    kwargs={
+                        "order": payment.order.code,
+                        "payment": payment.pk,
+                        "hash": hashlib.sha1(
+                            payment.order.secret.lower().encode()
+                        ).hexdigest(),
+                    },
+                ),
+                "cancel_url": build_absolute_uri(
+                    self.event,
+                    "plugins:pretix_multisafepay:webhook",
+                    kwargs={
+                        "payment": payment.pk,
+                        "action": "fail",
+                    },
+                ),
+
+            },
             "days_active": "14", # fix!
             "plugin": {
                 "shop": "Pretix",
@@ -460,11 +460,38 @@ class MultisafepayMethod(BasePaymentProvider):
             )
 
         data = req.json()
+        print(data)
         payment.info = json.dumps(data)
         payment.state = OrderPayment.PAYMENT_STATE_CREATED
         payment.save()
         request.session["payment_multisafepay_order_secret"] = payment.order.secret
-        return self.redirect(request, data.get("payment_url"))
+        return self.redirect(request, data.get("data").get("payment_url"))
+
+    def redirect(self, request, url):
+        # if request.session.get("iframe_session", False) and self.method in (
+        #         "paypal",
+        #         "sofort",
+        #         "giropay",
+        #         "paydirekt",
+        # ):
+        #     return (
+        #             build_absolute_uri(request.event, "plugins:pretix_saferpay:redirect")
+        #             + "?data="
+        #             + signing.dumps(
+        #         {
+        #             "url": url,
+        #             "session": {
+        #                 "payment_saferpay_order_secret": request.session[
+        #                     "payment_saferpay_order_secret"
+        #                 ],
+        #             },
+        #         },
+        #         salt="safe-redirect",
+        #     )
+        #     )
+        # else:
+            print(str(url))
+            return str(url)
 
     def shred_payment_info(self, obj: OrderPayment):
         if not obj.info:
@@ -484,7 +511,7 @@ class MultisafepayCC(MultisafepayMethod):
     public_name = _("Credit card")
     refunds_allowed = True
     cancel_flow = False
-    payment_methods = ["CREDITCARD"]
+    payment_methods = "CREDITCARD"
 
     # @property
     # def payment_methods(self):
@@ -525,7 +552,7 @@ class MultisafepayWero(MultisafepayMethod):
     public_name = _("iDeal | Wero")
     refunds_allowed = True
     cancel_flow = False
-    payment_methods = ["IDEAL"]
+    payment_methods = "IDEAL"
 
 class MultisafepayBancontact(MultisafepayMethod):
     method = "bancontact"
@@ -533,4 +560,4 @@ class MultisafepayBancontact(MultisafepayMethod):
     public_name = _("Bancontact")
     refunds_allowed = True
     cancel_flow = False
-    payment_methods = ["BANCONTACT"]
+    payment_methods = "MISTERCASH"
