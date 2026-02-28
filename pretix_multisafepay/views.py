@@ -1,9 +1,12 @@
+import base64
 import hashlib
+import hmac
 import json
 import logging
 import requests
 import urllib.parse
 import uuid
+
 from django.contrib import messages
 from django.core import signing
 from django.http import Http404, HttpResponse, HttpResponseBadRequest
@@ -18,10 +21,10 @@ from pretix.base.models import Order, OrderPayment, Quota
 from pretix.base.payment import PaymentException
 from pretix.base.services.locking import LockTimeoutException
 from pretix.multidomain.urlreverse import build_absolute_uri, eventreverse
-from . import __spec_version__
+
+from .payment import MultisafepayMethod
 
 logger = logging.getLogger(__name__)
-
 
 @xframe_options_exempt
 def redirect_view(request, *args, **kwargs):
@@ -52,127 +55,27 @@ def redirect_view(request, *args, **kwargs):
         r._csp_ignore = True
         return r
 
-
-def handle_transaction_result(payment):
-    pprov = payment.payment_provider
-    trans = payment.info_data
-
-    if trans.get("Status") == "AUTHORIZED" and payment.state not in (
-        OrderPayment.PAYMENT_STATE_CONFIRMED,
-        OrderPayment.PAYMENT_STATE_REFUNDED,
-    ):
-        payment.order.log_action("pretix_multisafepay.event.authorized")
-        req = pprov._post(
-            "Payment/v1/Transaction/Capture",
-            json={
-                "RequestHeader": {
-                    "SpecVersion": __spec_version__,
-                    "CustomerId": pprov.settings.customer_id,
-                    "RequestId": str(uuid.uuid4()),
-                    "RetryIndicator": 0,
-                },
-                "TransactionReference": {"TransactionId": payment.info_data.get("Id")},
-            },
-        )
-        req.raise_for_status()
-        data = req.json()
-        if data["Status"] == "CAPTURED":
-            payment.order.log_action("pretix_multisafepay.event.captured")
-            trans["Status"] = "CAPTURED"
-            trans["CaptureId"] = data["CaptureId"]
-            payment.info = json.dumps(trans)
-            payment.save(update_fields=["info"])
-            payment.confirm()
-
-    elif trans.get("Status") == "CAPTURED" and payment.state not in (
-        OrderPayment.PAYMENT_STATE_CONFIRMED,
-        OrderPayment.PAYMENT_STATE_REFUNDED,
-    ):
-        payment.order.log_action("pretix_multisafepay.event.captured")
-        payment.confirm()
-    elif (
-        trans.get("Status") == "PENDING"
-        and payment.state == OrderPayment.PAYMENT_STATE_CREATED
-    ):
-        payment.state = OrderPayment.PAYMENT_STATE_PENDING
-        payment.save(update_fields=["state"])
-
-
-def capture(payment: OrderPayment):
-    if payment.state == OrderPayment.PAYMENT_STATE_CONFIRMED:
-        return
-
-    pprov = payment.payment_provider
-    try:
-        if payment.info_data.get("Status") == "CAPTURED":
-            return
-
-        if "Token" in payment.info_data:
-            req = pprov._post(
-                "Payment/v1/PaymentPage/Assert",
-                json={
-                    "RequestHeader": {
-                        "SpecVersion": "1.10",
-                        "CustomerId": pprov.settings.customer_id,
-                        "RequestId": str(uuid.uuid4()),
-                        "RetryIndicator": 0,
-                    },
-                    "Token": payment.info_data.get("Token"),
-                },
-            )
-            req.raise_for_status()
-            data = req.json()
-            trans = data["Transaction"]
-            if "PaymentMeans" in data:
-                trans["PaymentMeans"] = data["PaymentMeans"]
-
-            payment.info = json.dumps(trans)
-            payment.save(update_fields=["info"])
-            handle_transaction_result(payment)
-        elif payment.info_data.get("Status") == "AUTHORIZED":
-            handle_transaction_result(payment)
-        else:
-            raise PaymentException("Unknown payment state")
-
-    except requests.exceptions.HTTPError as e:
-        payment.fail(
-            log_data={"code": e.response.status_code, "reason": e.response.text}
-        )
-        raise PaymentException(
-            _(
-                "We had trouble communicating with Multisafepay. Please try again and get in touch "
-                "with us if this problem persists."
-            )
-        )
-    except requests.exceptions.RequestException as e:
-        payment.fail(log_data={"reason": str(e)})
-        raise PaymentException(
-            _(
-                "We had trouble communicating with Multisafepay. Please try again and get in touch "
-                "with us if this problem persists."
-            )
-        )
-
-
 class MultisafepayOrderView:
     def dispatch(self, request, *args, **kwargs):
         try:
             self.order = request.event.orders.get(code=kwargs["order"])
             if (
-                hashlib.sha1(self.order.secret.lower().encode()).hexdigest()
-                != kwargs["hash"].lower()
+                    hashlib.sha1(self.order.secret.lower().encode()).hexdigest()
+                    != kwargs["hash"].lower()
             ):
                 raise Http404("")
         except Order.DoesNotExist:
             # Do a hash comparison as well to harden timing attacks
             if (
-                "abcdefghijklmnopq".lower()
-                == hashlib.sha1("abcdefghijklmnopq".encode()).hexdigest()
+                    "abcdefghijklmnopq".lower()
+                    == hashlib.sha1("abcdefghijklmnopq".encode()).hexdigest()
             ):
                 raise Http404("")
             else:
                 raise Http404("")
         return super().dispatch(request, *args, **kwargs)
+
+
 
     @cached_property
     def payment(self):
@@ -186,7 +89,6 @@ class MultisafepayOrderView:
     def pprov(self):
         return self.payment.payment_provider
 
-
 @method_decorator(xframe_options_exempt, "dispatch")
 class ReturnView(MultisafepayOrderView, View):
     def get(self, request, *args, **kwargs):
@@ -196,7 +98,8 @@ class ReturnView(MultisafepayOrderView, View):
             OrderPayment.PAYMENT_STATE_CANCELED,
         ):
             try:
-                capture(self.payment)
+                print("we got here")
+                # capture(self.payment)
             except PaymentException as e:
                 messages.error(self.request, str(e))
             except LockTimeoutException:
@@ -242,19 +145,51 @@ class ReturnView(MultisafepayOrderView, View):
             )
             + ("?paid=yes" if self.order.status == Order.STATUS_PAID else "")
         )
-
+    
 
 @method_decorator(csrf_exempt, "dispatch")
 class WebhookView(View):
-    def get(self, request, *args, **kwargs):
-        if kwargs.get("action") == "success":
-            from .tasks import capture_task
+    def post(self, request, *args, **kwargs):
+        transaction_id = request.GET.get("transactionid")
+        timestamp = request.GET.get("timestamp")
 
-            capture_task.apply_async(args=(self.payment.pk,), countdown=30)
-        elif kwargs.get("action") == "fail":
-            self.payment.fail(log_data={"reason": "Webhook called with action=fail"})
+        if not timestamp:
+            return HttpResponse(status=403)
 
+
+        try:
+            if self.validate(request):
+                return HttpResponse("MULTISAFEPAY_OK", status=200)
+                # handle_order(self.payment, request.POST.get("id"))
+            else:
+                return HttpResponse(status=400)
+        except LockTimeoutException:
+            return HttpResponse(status=503)
+        except Quota.QuotaExceededException:
+            pass
         return HttpResponse(status=200)
+
+    def validate(self, request):
+        authheader = request.headers.get('Auth')
+        apikey = self.payment.payment_provider.settings.get("api_key")
+        payload = request.body.decode('utf-8')
+
+        # Step 1: Base64 decode the auth header
+        encoded_auth_bytes = authheader.encode("ascii")
+        decoded_auth_bytes = base64.b64decode(encoded_auth_bytes)
+        decoded_auth = decoded_auth_bytes.decode("ascii")
+
+        # Step 2: Split the decoded auth header
+        timestamp = decoded_auth.split(':')[0]
+        signature = decoded_auth.split(':')[1]
+
+        # Step 3: Concatenate the timestamp, colon, and payload
+        concatenated_string = str(timestamp) + ":" + str(payload)
+
+        # Step 4: SHA512 hash the concatenated string
+        hashed_value = hmac.new(apikey.encode(), concatenated_string.encode(), hashlib.sha512).hexdigest()
+
+        return hashed_value == signature
 
     @cached_property
     def payment(self):

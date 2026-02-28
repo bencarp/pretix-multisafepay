@@ -400,13 +400,14 @@ class MultisafepayMethod(BasePaymentProvider):
                 "locale": self.get_locale(payment.order.locale),
             },
             "payment_options": {
-                "notification_url": build_absolute_uri(
-                    self.event,
-                    "plugins:pretix_multisafepay:webhook",
-                    kwargs={
-                        "payment": payment.pk,
-                    }
-                ),
+                "notification_url": "https://melodyless-josh-interpervasively.ngrok-free.dev/org/testevent/multisafepay/webhook/" + str(payment.pk) + "/",
+                # "notification_url": build_absolute_uri(
+                #     self.event,
+                #     "plugins:pretix_multisafepay:webhook",
+                #     kwargs={
+                #         "payment": payment.pk,
+                #     }
+                # ),
                 "notification_method": "POST",
                 "redirect_url": build_absolute_uri(
                     self.event,
@@ -415,7 +416,7 @@ class MultisafepayMethod(BasePaymentProvider):
                         "order": payment.order.code,
                         "payment": payment.pk,
                         "hash": hashlib.sha1(
-                            payment.order.secret.lower().encode()
+                            payment.order.secret.lower().encode(),
                         ).hexdigest(),
                     },
                 ),
