@@ -9,7 +9,7 @@ event_patterns = [
         include(
             [
                 event_url(
-                    r"^webhook/(?P<payment>[0-9]+)/(?P<action>[^/]+)/$",
+                    r"^webhook/(?P<payment>[0-9]+)/$",
                     WebhookView.as_view(),
                     name="webhook",
                     require_live=False,

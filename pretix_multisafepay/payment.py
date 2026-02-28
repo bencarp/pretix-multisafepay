@@ -1,4 +1,5 @@
 import hashlib
+import ipaddress
 import json
 import logging
 from decimal import Decimal
@@ -19,6 +20,7 @@ from pretix.base.settings import SettingsSandbox
 from pretix.settings import __version__ as pretix_version
 from pretix.multidomain.urlreverse import build_absolute_uri
 from pretix.multidomain import event_url
+from pretix.helpers.http import get_client_ip
 from requests import HTTPError, RequestException
 
 from . import __version__
@@ -298,18 +300,18 @@ class MultisafepayMethod(BasePaymentProvider):
         }
         return template.render(ctx)
 
-    def api_payment_details(self, payment: OrderPayment):
-        return {
-            "id": payment.info_data.get("Id"),
-            "status": payment.info_data.get("Status"),
-            "reference": payment.info_data.get("SixTransactionReference"),
-            "payment_method": payment.info_data.get("PaymentMeans", {})
-            .get("Brand", {})
-            .get("Name"),
-            "payment_source": payment.info_data.get("PaymentMeans", {}).get(
-                "DisplayText"
-            ),
-        }
+    # def api_payment_details(self, payment: OrderPayment):
+    #     return {
+    #         "id": payment.info_data.get("Id"),
+    #         "status": payment.info_data.get("Status"),
+    #         "reference": payment.info_data.get("SixTransactionReference"),
+    #         "payment_method": payment.info_data.get("PaymentMeans", {})
+    #         .get("Brand", {})
+    #         .get("Name"),
+    #         "payment_source": payment.info_data.get("PaymentMeans", {}).get(
+    #             "DisplayText"
+    #         ),
+    #     }
 
     @property
     def test_mode_message(self):
@@ -351,9 +353,9 @@ class MultisafepayMethod(BasePaymentProvider):
             "en",
         }
 
-        if language[:2] in multisafepay_locales:
-            return language[:2]
-        return "en"
+        if language[:2] in multisafepay_locales == "nl":
+            return "nl_NL"
+        return "en_US"
 
     def _amount_to_decimal(self, cents):
         places = settings.CURRENCY_PLACES.get(self.event.currency, 2)
@@ -362,6 +364,17 @@ class MultisafepayMethod(BasePaymentProvider):
     def _decimal_to_int(self, amount):
         places = settings.CURRENCY_PLACES.get(self.event.currency, 2)
         return int(amount * 10**places)
+
+    def _get_customer_ip(request: HttpRequest):
+        client_ip = get_client_ip(request)
+        if not client_ip:
+            return None
+        try:
+            client_ip = ipaddress.ip_address(client_ip)
+        except ValueError:
+            # Web server not set up correctly
+            return None
+        return client_ip
 
     def _get_payment_page_init_body(self, payment):
         b = {
@@ -383,16 +396,15 @@ class MultisafepayMethod(BasePaymentProvider):
             # ),
             "gateway": self.payment_methods,
             # "Wallets": self.payment_method_wallets,
-            # "Payer": {
-            #     "LanguageCode": self.get_locale(payment.order.locale),
-            # },
+            "customer": {
+                "locale": self.get_locale(payment.order.locale),
+            },
             "payment_options": {
                 "notification_url": build_absolute_uri(
                     self.event,
                     "plugins:pretix_multisafepay:webhook",
                     kwargs={
                         "payment": payment.pk,
-                        "action": "success"
                     }
                 ),
                 "notification_method": "POST",
@@ -407,33 +419,38 @@ class MultisafepayMethod(BasePaymentProvider):
                         ).hexdigest(),
                     },
                 ),
-                "cancel_url": build_absolute_uri(
-                    self.event,
-                    "plugins:pretix_multisafepay:webhook",
-                    kwargs={
-                        "payment": payment.pk,
-                        "action": "fail",
-                    },
-                ),
 
             },
-            "days_active": "14", # fix!
+
             "plugin": {
                 "shop": "Pretix",
                 "shop_version": pretix_version,
                 "plugin_version": __version__,
-                "shop_root_url": "https://pretix.nesko.nl" # temporarily hardcoded because different cases for event/shop urls
+                # "shop_root_url":
             }
         }
 
-        print(b) # only for debug!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        mode = self.event.settings.get('payment_term_mode')
+
+        if mode == 'days':
+            b["days_active"] = self.event.settings.get('payment_term_days')
+        elif mode == 'minutes':
+            b["seconds_active"] = self.event.settings.get('payment_term_minutes') * 60
+        else:
+            b["days_active"] = "14"
+
         return b
 
     def execute_payment(self, request: HttpRequest, payment: OrderPayment):
+        body = self._get_payment_page_init_body(payment)
+        body["customer"]["ip_address"] = get_client_ip(request)
+
+        print(body)  # only for debug!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
         try:
             req = self._post(
                 "v1/json/orders",
-                json=self._get_payment_page_init_body(payment),
+                json = body,
             )
             req.raise_for_status()
         except HTTPError:
@@ -469,30 +486,8 @@ class MultisafepayMethod(BasePaymentProvider):
         return self.redirect(request, data.get("data").get("payment_url"))
 
     def redirect(self, request, url):
-        # if request.session.get("iframe_session", False) and self.method in (
-        #         "paypal",
-        #         "sofort",
-        #         "giropay",
-        #         "paydirekt",
-        # ):
-        #     return (
-        #             build_absolute_uri(request.event, "plugins:pretix_saferpay:redirect")
-        #             + "?data="
-        #             + signing.dumps(
-        #         {
-        #             "url": url,
-        #             "session": {
-        #                 "payment_saferpay_order_secret": request.session[
-        #                     "payment_saferpay_order_secret"
-        #                 ],
-        #             },
-        #         },
-        #         salt="safe-redirect",
-        #     )
-        #     )
-        # else:
-            print(str(url))
-            return str(url)
+        print(str(url)) ## Only for debug!!!!
+        return str(url)
 
     def shred_payment_info(self, obj: OrderPayment):
         if not obj.info:
@@ -508,8 +503,8 @@ class MultisafepayMethod(BasePaymentProvider):
 
 class MultisafepayCC(MultisafepayMethod):
     method = "creditcard"
-    verbose_name = _("Credit card via Multisafepay")
-    public_name = _("Credit card")
+    verbose_name = _("Debit card or credit card via Multisafepay")
+    public_name = _("Debit/Credit card")
     refunds_allowed = True
     cancel_flow = False
     payment_methods = "CREDITCARD"
@@ -543,9 +538,9 @@ class MultisafepayCC(MultisafepayMethod):
     #         payment_methods.append(gettext("Google Pay"))
     #     return ", ".join(payment_methods)
 
-    # @property
-    # def is_enabled(self) -> bool:
-    #     return self.settings.get("_enabled", as_type=bool) and self.payment_methods
+    @property
+    def is_enabled(self) -> bool:
+        return self.settings.get("_enabled", as_type=bool) and self.payment_methods
 
 class MultisafepayWero(MultisafepayMethod):
     method = "wero"
