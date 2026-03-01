@@ -352,8 +352,9 @@ class MultisafepayMethod(BasePaymentProvider):
             "en",
         }
 
-        if language[:2] in multisafepay_locales == "nl":
-            return "nl_NL"
+        if language[:2] in multisafepay_locales:
+            if language == "nl":
+                return "nl_NL"
         return "en_US"
 
     def _amount_to_decimal(self, cents):
