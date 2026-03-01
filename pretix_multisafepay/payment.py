@@ -419,6 +419,17 @@ class MultisafepayMethod(BasePaymentProvider):
                         ).hexdigest(),
                     },
                 ),
+                "cancel_url": build_absolute_uri(
+                    self.event,
+                    "plugins:pretix_multisafepay:return",
+                    kwargs={
+                        "order": payment.order.code,
+                        "payment": payment.pk,
+                        "hash": hashlib.sha1(
+                            payment.order.secret.lower().encode(),
+                        ).hexdigest(),
+                    },
+                ),
 
             },
 
