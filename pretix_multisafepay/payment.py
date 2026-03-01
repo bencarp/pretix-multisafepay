@@ -486,7 +486,6 @@ class MultisafepayMethod(BasePaymentProvider):
         return self.redirect(request, data.get("data").get("payment_url"))
 
     def redirect(self, request, url):
-        print(str(url)) ## Only for debug!!!!
         return str(url)
 
     def shred_payment_info(self, obj: OrderPayment):
