@@ -7,9 +7,10 @@ import requests
 import urllib.parse
 import uuid
 
+from decimal import Decimal
 from django.contrib import messages
 from django.core import signing
-from django.http import Http404, HttpResponse, HttpResponseBadRequest
+from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
@@ -21,6 +22,8 @@ from pretix.base.models import Order, OrderPayment, Quota
 from pretix.base.payment import PaymentException
 from pretix.base.services.locking import LockTimeoutException
 from pretix.multidomain.urlreverse import build_absolute_uri, eventreverse
+from requests import HTTPError
+from ujson import JSONDecodeError
 
 from .payment import MultisafepayMethod
 
@@ -89,37 +92,137 @@ class MultisafepayOrderView:
     def pprov(self):
         return self.payment.payment_provider
 
+def handle_order(payment, request: HttpRequest, retry=True):
+    pprov = payment.payment_provider
+
+    data = json.loads(request.body.decode("utf-8"))
+    print(data)
+
+        # if data.get("status") in ("paid", "shipping", "completed") and any(
+        #     line["amountRefunded"].get("value", "0.00") != "0.00"
+        #     for line in data["lines"]
+        # ):
+        #     refundsresp = requests.get(
+        #         "https://api.mollie.com/v2/orders/" + mollie_id + "/refunds?" + qp,
+        #         headers=pprov.request_headers,
+        #     )
+        #     refundsresp.raise_for_status()
+        #     refunds = refundsresp.json()["_embedded"]["refunds"]
+        # else:
+        #     refunds = []
+
+    payment.info = json.dumps(data)
+    payment.save()
+
+    print(payment)
+
+    try:
+        if (data.get("status") in ("authorized", "paid", "shipping")
+            and payment.state == OrderPayment.PAYMENT_STATE_CREATED
+        ):  # todo: remove paid
+            payment.order.log_action("pretix_multisafepay.event." + data["status"])
+            with transaction.atomic():
+                # Mark order as shipped
+                payment = OrderPayment.objects.select_for_update().get(pk=payment.pk)
+                if payment.state != OrderPayment.PAYMENT_STATE_CREATED:
+                    return  # race condition between return view and webhook
+
+                body = {
+                    # "If you leave out this parameter [lines], the entire order will be shipped."
+                }
+
+                if pprov.settings.connect_client_id and pprov.settings.access_token:
+                    body["testmode"] = payment.info_data.get("mode", "live") == "test"
+
+                payment.state = OrderPayment.PAYMENT_STATE_PENDING
+                payment.save(update_fields=["state"])
+            handle_order(payment, request)
+        elif data.get("status") in ("paid", "completed") and payment.state in (
+            OrderPayment.PAYMENT_STATE_PENDING,
+            OrderPayment.PAYMENT_STATE_CREATED,
+            OrderPayment.PAYMENT_STATE_CANCELED,
+            OrderPayment.PAYMENT_STATE_FAILED,
+        ):
+            if Decimal(data["amount"]) != payment.amount:
+                payment.amount = Decimal(data["amount"])
+            payment.order.log_action("pretix_multisafepay.event.paid")
+            print("this happened!")
+            payment.confirm()
+        elif data.get("status") == "canceled" and payment.state in (
+            OrderPayment.PAYMENT_STATE_CREATED,
+            OrderPayment.PAYMENT_STATE_PENDING,
+        ):
+            payment.state = OrderPayment.PAYMENT_STATE_CANCELED
+            payment.save()
+            payment.order.log_action("pretix_multisafepay.event.canceled")
+        elif (
+            data.get("status") == "pending"
+            and payment.state == OrderPayment.PAYMENT_STATE_CREATED
+        ):
+            payment.state = OrderPayment.PAYMENT_STATE_PENDING
+            payment.save()
+        elif data.get("status") in ("expired", "failed") and payment.state in (
+            OrderPayment.PAYMENT_STATE_CREATED,
+            OrderPayment.PAYMENT_STATE_PENDING,
+        ):
+            payment.state = OrderPayment.PAYMENT_STATE_CANCELED
+            payment.save()
+            payment.order.log_action("pretix_multisafepay.event." + data.get("status"))
+        elif payment.state == OrderPayment.PAYMENT_STATE_CONFIRMED:
+            known_refunds = [r.info_data.get("id") for r in payment.refunds.all()]
+            for r in refunds:
+                if r.get("status") != "failed" and r.get("id") not in known_refunds:
+                    payment.create_external_refund(
+                        amount=Decimal(r["amount"]["value"]), info=json.dumps(r)
+                    )
+
+        else:
+            payment.order.log_action("pretix_multisafepay.event.unknown", data)
+
+    except HTTPError:
+        # if resp.status_code == 401 and retry:
+        #     # Token might be expired, let's retry!
+        #     if refresh_mollie_token(payment.order.event, False):
+        #         print("httperror")
+        #         # return handle_payment(payment, request, retry=False)
+        raise PaymentException(
+            _(
+                "We had trouble communicating with MultiSafepay. Please try again and get in touch "
+                "with us if this problem persists."
+            )
+        )
+
 @method_decorator(xframe_options_exempt, "dispatch")
 class ReturnView(MultisafepayOrderView, View):
     def get(self, request, *args, **kwargs):
-        if self.payment.state not in (
-            OrderPayment.PAYMENT_STATE_CONFIRMED,
-            OrderPayment.PAYMENT_STATE_REFUNDED,
-            OrderPayment.PAYMENT_STATE_CANCELED,
-        ):
-            try:
-                print("we got here")
-                # capture(self.payment)
-            except PaymentException as e:
-                messages.error(self.request, str(e))
-            except LockTimeoutException:
-                messages.error(
-                    self.request,
-                    _(
-                        "We received your payment but were unable to mark your ticket as "
-                        "the server was too busy. Please check back in a couple of "
-                        "minutes."
-                    ),
-                )
-            except Quota.QuotaExceededException:
-                messages.error(
-                    self.request,
-                    _(
-                        "We received your payment but were unable to mark your ticket as "
-                        "paid as one of your ordered products is sold out. Please contact "
-                        "the event organizer for further steps."
-                    ),
-                )
+        # if self.payment.state not in (
+        #     OrderPayment.PAYMENT_STATE_CONFIRMED,
+        #     OrderPayment.PAYMENT_STATE_REFUNDED,
+        #     OrderPayment.PAYMENT_STATE_CANCELED,
+        # ):
+        #     try:
+        #         print("we got here - now capturing again")
+        #         handle_order(self.payment, request, retry=True)
+        #     except PaymentException as e:
+        #         messages.error(self.request, str(e))
+        #     except LockTimeoutException:
+        #         messages.error(
+        #             self.request,
+        #             _(
+        #                 "We received your payment but were unable to mark your ticket as "
+        #                 "the server was too busy. Please check back in a couple of "
+        #                 "minutes."
+        #             ),
+        #         )
+        #     except Quota.QuotaExceededException:
+        #         messages.error(
+        #             self.request,
+        #             _(
+        #                 "We received your payment but were unable to mark your ticket as "
+        #                 "paid as one of your ordered products is sold out. Please contact "
+        #                 "the event organizer for further steps."
+        #             ),
+        #         )
         return self._redirect_to_order()
 
     def _redirect_to_order(self):
@@ -156,11 +259,10 @@ class WebhookView(View):
         if not timestamp:
             return HttpResponse(status=403)
 
-
         try:
             if self.validate(request):
+                handle_order(self.payment, request, retry=True)
                 return HttpResponse("MULTISAFEPAY_OK", status=200)
-                # handle_order(self.payment, request.POST.get("id"))
             else:
                 return HttpResponse(status=400)
         except LockTimeoutException:
