@@ -324,7 +324,7 @@ class MultisafepayMethod(BasePaymentProvider):
     def _post(self, endpoint, *args, **kwargs):
         r = requests.post(
             "https://{env}.multisafepay.com/v1/json/orders?api_key={auth}".format(
-                env="www" if self.settings.get("endpoint") == "live" else "testapi",
+                env="api" if self.settings.get("endpoint") == "live" else "testapi",
                 auth=(self.settings.get("api_key"))
             ),
             timeout=20,
@@ -337,7 +337,7 @@ class MultisafepayMethod(BasePaymentProvider):
     def _get(self, endpoint, *args, **kwargs):
         r = requests.get(
             "https://{env}.multisafepay.com/v1/json/orders?api_key={auth}".format(
-                env="www" if self.settings.get("endpoint") == "live" else "testapi",
+                env="api" if self.settings.get("endpoint") == "live" else "testapi",
                 auth=(self.settings.get("api_key"))
             ),
             timeout=20,
