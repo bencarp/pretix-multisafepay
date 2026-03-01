@@ -7,6 +7,7 @@ import requests
 import urllib.parse
 import uuid
 
+from time import sleep
 from decimal import Decimal
 from django.contrib import messages
 from django.core import signing
@@ -143,6 +144,8 @@ def handle_order(payment, request: HttpRequest, retry=True):
             OrderPayment.PAYMENT_STATE_CANCELED,
             OrderPayment.PAYMENT_STATE_FAILED,
         ):
+            print(Decimal(data["amount"]))
+            print(payment.amount)
             if Decimal(data["amount"]) != payment.amount:
                 payment.amount = Decimal(data["amount"])
             payment.order.log_action("pretix_multisafepay.event.paid")
@@ -223,6 +226,7 @@ class ReturnView(MultisafepayOrderView, View):
         #                 "the event organizer for further steps."
         #             ),
         #         )
+        sleep(2)
         return self._redirect_to_order()
 
     def _redirect_to_order(self):
