@@ -95,9 +95,7 @@ class MultisafepayOrderView:
 
 def handle_order(payment, request: HttpRequest, retry=True):
     pprov = payment.payment_provider
-
     data = json.loads(request.body.decode("utf-8"))
-    print(data)
 
         # if data.get("status") in ("paid", "shipping", "completed") and any(
         #     line["amountRefunded"].get("value", "0.00") != "0.00"
@@ -114,8 +112,6 @@ def handle_order(payment, request: HttpRequest, retry=True):
 
     payment.info = json.dumps(data)
     payment.save()
-
-    print(payment)
 
     try:
         if (data.get("status") in ("authorized", "paid", "shipping")
@@ -144,12 +140,9 @@ def handle_order(payment, request: HttpRequest, retry=True):
             OrderPayment.PAYMENT_STATE_CANCELED,
             OrderPayment.PAYMENT_STATE_FAILED,
         ):
-            print(Decimal(data["amount"]))
-            print(payment.amount)
             if Decimal(data["amount"]) != payment.amount:
                 payment.amount = Decimal(data["amount"])
             payment.order.log_action("pretix_multisafepay.event.paid")
-            print("this happened!")
             payment.confirm()
         elif data.get("status") == "canceled" and payment.state in (
             OrderPayment.PAYMENT_STATE_CREATED,
@@ -183,11 +176,6 @@ def handle_order(payment, request: HttpRequest, retry=True):
             payment.order.log_action("pretix_multisafepay.event.unknown", data)
 
     except HTTPError:
-        # if resp.status_code == 401 and retry:
-        #     # Token might be expired, let's retry!
-        #     if refresh_mollie_token(payment.order.event, False):
-        #         print("httperror")
-        #         # return handle_payment(payment, request, retry=False)
         raise PaymentException(
             _(
                 "We had trouble communicating with MultiSafepay. Please try again and get in touch "
@@ -226,7 +214,7 @@ class ReturnView(MultisafepayOrderView, View):
         #                 "the event organizer for further steps."
         #             ),
         #         )
-        sleep(2)
+        sleep(2) # Just wait, payment will show up
         return self._redirect_to_order()
 
     def _redirect_to_order(self):

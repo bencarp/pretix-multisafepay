@@ -344,7 +344,6 @@ class MultisafepayMethod(BasePaymentProvider):
             *args,
             **kwargs,
         )
-        print(f)
         return r
 
     def get_locale(self, language):
