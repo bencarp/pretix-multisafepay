@@ -156,6 +156,13 @@ def handle_order(payment, request: HttpRequest, retry=True):
             payment.state = OrderPayment.PAYMENT_STATE_PENDING
             payment.save()
             payment.order.log_action("pretix_multisafepay.event." + data.get("status"))
+        elif data.get("status") == "declined" and payment.state in (
+            OrderPayment.PAYMENT_STATE_CREATED,
+            OrderPayment.PAYMENT_STATE_PENDING,
+        ):
+            payment.state = OrderPayment.PAYMENT_STATE_PENDING
+            payment.save()
+            payment.order.log_action("pretix_multisafepay.event." + data.get("status"))
         elif data.get("status") in ("expired", "failed") and payment.state in (
             OrderPayment.PAYMENT_STATE_CREATED,
             OrderPayment.PAYMENT_STATE_PENDING,
