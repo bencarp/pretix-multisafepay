@@ -36,6 +36,12 @@ Since this package is inofficial and not (yet) tracked by PyPI, clone the reposi
     USER pretixuser
     RUN cd /pretix/src && make production
 
+Not implemented yet
+-------
+- [ ] Refunds
+- [ ] Less common payment methods (Belfius, MB Way etc)
+- [ ] Translations other than Dutch
+- [ ] Customer information and cart info forwarding to MultiSafepay
 
 License
 -------
