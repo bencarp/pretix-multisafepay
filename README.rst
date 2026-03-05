@@ -40,6 +40,8 @@ Not implemented yet
 -------
 - [ ] Refunds
 - [ ] Less common payment methods (Belfius, MB Way etc)
+- [ ] Wallets (Apple/Google Pay)
+- [ ] Payer information relayed back to Pretix
 - [ ] Translations other than Dutch
 - [ ] Customer information and cart info forwarding to MultiSafepay
 
