@@ -300,6 +300,37 @@ class MultisafepayMethod(BasePaymentProvider):
         }
         return template.render(ctx)
 
+    def cancel_payment(self, payment: OrderPayment):
+        if payment.state == OrderPayment.PAYMENT_STATE_PENDING and not self.abort_pending_allowed:
+            try:
+                headers = {
+                    "accept": "application/json",
+                    "content-type": "application/json"
+                }
+                body = {
+                    "status": "cancelled",
+                    "exclude_order": True
+                }
+                req = requests.patch(
+                    "https://{env}.multisafepay.com/v1/json/orders/{order_id}?api_key={auth}".format(
+                        env="api" if self.settings.get("endpoint") == "live" else "testapi",
+                        auth=(self.settings.get("api_key")),
+                        order_id="{}-{}-P-{}".format(
+                            self.event.slug.upper(), payment.order.code, payment.local_id),
+                    ),
+                    timeout = 20,
+                    headers = headers,
+                    json = body
+                )
+                req.raise_for_status()
+            except HTTPError:
+                raise PaymentException(_(
+                    "This payment is already being processed and can not be canceled any more."
+                ))
+
+        payment.state = OrderPayment.PAYMENT_STATE_CANCELED
+        payment.save(update_fields=['state'])
+
     # def api_payment_details(self, payment: OrderPayment):
     #     return {
     #         "id": payment.info_data.get("Id"),
