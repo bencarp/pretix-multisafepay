@@ -1,9 +1,8 @@
 {% load i18n %}
 
-{% if payment.status == "pending" %}
+{% if payment.state == "pending" %}
     <p>{% blocktrans trimmed %}
-        We're waiting for an answer from the payment provider regarding your payment. Please contact us if this
-        takes more than a few days.
+        Please complete your payment with MultiSafepay.
     {% endblocktrans %}</p>
 {% else %}
     <p>{% blocktrans trimmed %}
