@@ -179,7 +179,7 @@ def handle_order(payment, request: HttpRequest, retry=True):
                     )
 
         else:
-            payment.order.log_action("pretix_multisafepay.event" + data.get("status") + ".unhandled")
+            payment.order.log_action("pretix_multisafepay.event." + data.get("status") + ".unhandled")
 
     except HTTPError:
         raise PaymentException(
