@@ -116,7 +116,7 @@ def handle_order(payment, request: HttpRequest, retry=True):
     try:
         if (data.get("status") in ("authorized", "paid", "shipping")
             and payment.state == OrderPayment.PAYMENT_STATE_CREATED
-        ):  # todo: remove paid
+        ):
             payment.order.log_action("pretix_multisafepay.event." + data["status"])
             with transaction.atomic():
                 # Mark order as shipped
@@ -192,35 +192,7 @@ def handle_order(payment, request: HttpRequest, retry=True):
 @method_decorator(xframe_options_exempt, "dispatch")
 class ReturnView(MultisafepayOrderView, View):
     def get(self, request, *args, **kwargs):
-        # if self.payment.state not in (
-        #     OrderPayment.PAYMENT_STATE_CONFIRMED,
-        #     OrderPayment.PAYMENT_STATE_REFUNDED,
-        #     OrderPayment.PAYMENT_STATE_CANCELED,
-        # ):
-        #     try:
-        #         print("we got here - now capturing again")
-        #         handle_order(self.payment, request, retry=True)
-        #     except PaymentException as e:
-        #         messages.error(self.request, str(e))
-        #     except LockTimeoutException:
-        #         messages.error(
-        #             self.request,
-        #             _(
-        #                 "We received your payment but were unable to mark your ticket as "
-        #                 "the server was too busy. Please check back in a couple of "
-        #                 "minutes."
-        #             ),
-        #         )
-        #     except Quota.QuotaExceededException:
-        #         messages.error(
-        #             self.request,
-        #             _(
-        #                 "We received your payment but were unable to mark your ticket as "
-        #                 "paid as one of your ordered products is sold out. Please contact "
-        #                 "the event organizer for further steps."
-        #             ),
-        #         )
-        sleep(2) # Just wait, payment will show up
+        sleep(2) # Just wait for webhook, payment will show up
         return self._redirect_to_order()
 
     def _redirect_to_order(self):
