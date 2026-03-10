@@ -529,6 +529,24 @@ class MultisafepayMethod(BasePaymentProvider):
         return self.redirect(request, data.get("data").get("payment_url"))
 
     def redirect(self, request, url):
+        if request.session.get("iframe_session", False):
+            return (
+                    build_absolute_uri(request.event, "plugins:pretix_multisafepay:redirect")
+                    + "?data="
+                    + signing.dumps(
+                {
+                    "url": url,
+                    "session": {
+                        "payment_multisafepay_order_secret": request.session[
+                            "payment_multisafepay_order_secret"
+                        ],
+                    },
+                },
+                salt="safe-redirect",
+            )
+
+        )
+
         return str(url)
 
     def shred_payment_info(self, obj: OrderPayment):
