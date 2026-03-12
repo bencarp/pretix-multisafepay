@@ -378,15 +378,32 @@ class MultisafepayMethod(BasePaymentProvider):
         return r
 
     def get_locale(self, language):
-        multisafepay_locales = {
-            "nl",
-            "en",
+        pretix_to_multisafepay_locales = {
+            "en": "en_US",
+            "nl": "nl_NL",
+            "nl_BE": "nl_BE",
+            "fr_BE": "fr_BE",
+            "fr": "fr_FR",
+            "de": "de_DE",
+            "es": "es_ES",
+            "cs": "cs_CZ",
+            "pt": "pt_PT",
+            "it": "it_IT",
+            "nb": "nb_NO",
+            "sv": "sv_SE",
+            "fi": "fi_FI",
+            "da": "da_DK",
+            "pl": "pl_PL",
+            "zh": "zh_CN",
         }
+        return pretix_to_multisafepay_locales.get(
+            language,
+            pretix_to_multisafepay_locales.get(
+                language.split("-")[0],
+                pretix_to_multisafepay_locales.get(language.split("_")[0], "en_US"),
+            ),
+        )
 
-        if language[:2] in multisafepay_locales:
-            if language == "nl":
-                return "nl_NL"
-        return "en_US"
 
     def _amount_to_decimal(self, cents):
         places = settings.CURRENCY_PLACES.get(self.event.currency, 2)
