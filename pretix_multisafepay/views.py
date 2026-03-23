@@ -21,6 +21,7 @@ from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.decorators.csrf import csrf_exempt
 from pretix.base.models import Order, OrderPayment, Quota
 from pretix.base.payment import PaymentException
+from pretix.base.logentrytypes import OrderLogEntryType, log_entry_types
 from pretix.base.services.locking import LockTimeoutException
 from pretix.multidomain.urlreverse import build_absolute_uri, eventreverse
 from requests import HTTPError
@@ -93,6 +94,20 @@ class MultisafepayOrderView:
     def pprov(self):
         return self.payment.payment_provider
 
+@log_entry_types.new_from_dict({
+    'pretix_multisafepay.event.paid': _('MultiSafepay has marked the transaction as paid.'),
+    'pretix_multisafepay.event.completed': _('MultiSafepay has marked the transaction as completed.'),
+    'pretix_multisafepay.event.initialized': _('MultiSafepay has marked the transaction as initialized.'),
+    'pretix_multisafepay.event.declined': _('MultiSafepay has marked the transaction as declined.'),
+    'pretix_multisafepay.event.void': _('MultiSafepay has marked the transaction as void.'),
+    'pretix_multisafepay.event.cancelled': _('MultiSafepay has marked the transaction as cancelled.'),
+    'pretix_multisafepay.event.expired': _('MultiSafepay has marked the transaction as expired.'),
+    'pretix_multisafepay.event.void.unhandled': _('MultiSafepay has marked a transaction as void. Pretix cannot find the transaction.'),
+    'pretix_multisafepay.event.expired.unhandled': _('MultiSafepay has marked a transaction as expired. Pretix cannot find the transaction.'),
+})
+class CoreOrderLogEntryType(OrderLogEntryType):
+    pass
+
 def handle_order(payment, request: HttpRequest, retry=True):
     pprov = payment.payment_provider
     data = json.loads(request.body.decode("utf-8"))
@@ -144,13 +159,13 @@ def handle_order(payment, request: HttpRequest, retry=True):
                 payment.amount = Decimal(data["amount"])
             payment.order.log_action("pretix_multisafepay.event.paid")
             payment.confirm()
-        elif data.get("status") == "canceled" and payment.state in (
+        elif data.get("status") == "cancelled" and payment.state in (
             OrderPayment.PAYMENT_STATE_CREATED,
             OrderPayment.PAYMENT_STATE_PENDING,
         ):
             payment.state = OrderPayment.PAYMENT_STATE_CANCELED
             payment.save()
-            payment.order.log_action("pretix_multisafepay.event.canceled")
+            payment.order.log_action("pretix_multisafepay.event.cancelled")
         elif (data.get("status") in ("pending", "initialized")
             and payment.state == OrderPayment.PAYMENT_STATE_CREATED):
             payment.state = OrderPayment.PAYMENT_STATE_PENDING
